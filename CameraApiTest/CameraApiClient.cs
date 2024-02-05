@@ -1,44 +1,33 @@
-﻿using Microsoft.AspNetCore.WebUtilities;
-
-namespace CameraApiTest;
+﻿namespace CameraApiTest;
 
 public sealed class CameraApiClient
 {
-    private readonly HttpClient httpClient = new HttpClient();
+    private readonly HttpClient httpClient = new();
 
-    public async Task OpenStream()
+    public async Task TryCameraApi()
     {
-        var url = "http://192.168.1.230/cgi-bin/videoStatServer.cgi?action=attach&channel=1&heartbeat=60";
+        await ReadApiMethod("http://192.168.1.230/cgi-bin/videoStatServer.cgi?action=getSummary");
+        await ReadApiMethod("http://192.168.1.230/cgi-bin/videoStatServer.cgi?action=attach&heartbeat=5");
+    }
 
-        HttpResponseMessage? countPass = await GetResponseAsync(url);
+    public async Task ReadApiMethod(string url)
+    {
+        var response = await GetResponseAsync(url);
 
-        Console.WriteLine("Status Code: {0}", countPass.StatusCode);
+        Console.WriteLine("Status Code: {0}", response.StatusCode);
 
-        if (countPass.IsSuccessStatusCode)
+        if (response.IsSuccessStatusCode)
         {
-            var stream = await countPass.Content.ReadAsStreamAsync();
+            using var body = await response.Content.ReadAsStreamAsync();
+            using var reader = new StreamReader(body);
 
-            // Use MultipartReader to read the content of the response
-            string? boundary = countPass.Content.Headers.ContentType.Parameters.First().Value;
-            var reader = new MultipartReader(boundary, stream);
-
-            // Read parts in a loop
-            while (true)
-            {
-                var section = await reader.ReadNextSectionAsync();
-                if (section == null) break;  // No more sections
-
-                // Process the section's content
-                var content = await new StreamReader(section.Body).ReadToEndAsync();
-                Console.WriteLine("Content: {0}", content);
-            }
-
-            Console.WriteLine("Steam Stopped");
+            while (!reader.EndOfStream)
+                Console.WriteLine(reader.ReadLine());
         }
     }
 
 
-    public async Task<HttpResponseMessage?> GetResponseAsync(string actionUrl)
+    public async Task<HttpResponseMessage> GetResponseAsync(string actionUrl)
     {
         var url = new Uri(actionUrl);
 
@@ -50,16 +39,17 @@ public sealed class CameraApiClient
         }
         else
         {
-            await Task.Delay(30000);
-            var authorization = AuthorizationHelper.GetAuthorizationHader(url, 
+            var authorization = AuthorizationHelper.GetAuthorizationHader(url,
                 unauthorizedMessage.Headers.GetValues("WWW-Authenticate").First(),
-                "000000011");
+                "00001");
 
             var request = new HttpRequestMessage(HttpMethod.Get, actionUrl);
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Digest", authorization);
             request.Headers.Add("Cookie", "secure");
 
-            return await httpClient.SendAsync(request);
+            Console.WriteLine("Send digest");
+
+            return await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         }
 
     }
