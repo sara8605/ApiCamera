@@ -6,13 +6,13 @@ public sealed class CameraApiClient
 
     public async Task TryCameraApi()
     {
-        await ReadApiMethod("http://192.168.1.230/cgi-bin/videoStatServer.cgi?action=getSummary");
+        //await ReadApiMethod("http://192.168.1.230/cgi-bin/videoStatServer.cgi?action=getSummary");
         await ReadApiMethod("http://192.168.1.230/cgi-bin/videoStatServer.cgi?action=attach&heartbeat=5");
     }
 
     public async Task ReadApiMethod(string url)
     {
-        var response = await GetResponseAsync(url);
+        var response = await GetAuthorizedResponseAsync(url);
 
         Console.WriteLine("Status Code: {0}", response.StatusCode);
 
@@ -27,7 +27,7 @@ public sealed class CameraApiClient
     }
 
 
-    public async Task<HttpResponseMessage> GetResponseAsync(string actionUrl)
+    public async Task<HttpResponseMessage> GetAuthorizedResponseAsync(string actionUrl)
     {
         var url = new Uri(actionUrl);
 
