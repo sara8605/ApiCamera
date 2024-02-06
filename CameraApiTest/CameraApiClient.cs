@@ -22,7 +22,10 @@ public sealed class CameraApiClient
             using var reader = new StreamReader(body);
 
             while (!reader.EndOfStream)
-                Console.WriteLine(reader.ReadLine());
+            {
+                var line = await reader.ReadLineAsync();
+                Console.WriteLine(line);
+            }
         }
     }
 
