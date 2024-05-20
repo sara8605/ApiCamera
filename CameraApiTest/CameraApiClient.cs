@@ -6,13 +6,24 @@ public sealed class CameraApiClient
 
     public async Task TryCameraApi()
     {
-        //await ReadApiMethod("http://192.168.1.230/cgi-bin/videoStatServer.cgi?action=getSummary");
-        await ReadApiMethod("http://192.168.1.230/cgi-bin/videoStatServer.cgi?action=attach&heartbeat=5");
+        _ = Task.Run(async () =>
+            // כמדומני שזו המתודה שמחזירה נתונים, בכל תזוזה של אדם
+            await ReadApiMethod("videoStatServer.cgi?action=attach&heartbeat=5")
+        );
+
+        //await Task.Delay(TimeSpan.FromSeconds(10));
+        // "לא עובד בדגם שלנו"
+        await ReadApiMethod("videoStatServer.cgi?action=getSummary&channel=1");
+
+        // אינני יודע בדיוק מה זה, לכאורה זה אמור להגיב לטריגרים שהוגדרו
+        await ReadApiMethod("eventManager.cgi?action=attach&heartbeat=20&channel=1&codes=[StayDetection,ManNumDetection,CrowdDetection]");
+
+        //await ReadApiMethod("devVideoAnalyse.cgi?action=getcaps&channel=1");
     }
 
     public async Task ReadApiMethod(string url)
     {
-        var response = await GetAuthorizedResponseAsync(url);
+        var response = await GetAuthorizedResponseAsync("http://192.168.1.230/cgi-bin/" + url);
 
         Console.WriteLine("Status Code: {0}", response.StatusCode);
 
